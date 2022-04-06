@@ -20,7 +20,9 @@ from wordcloud import WordCloud
 from textblob import TextBlob
 import streamlit_wordcloud as wordcloud
 from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+import plotly.express as px
 
+from plotly.subplots import make_subplots
 import re
 import time
 import os
@@ -31,7 +33,7 @@ loaded_model = pickle.load(open("/Users/fbarde/Desktop/classify/TM12_1.0_LogReg_
 
 #load dataset
 
-
+raw = pd.read_csv("/Users/fbarde/Desktop/classify//train.csv")
 #creating a function for prediction
 
 def tweet_prediction(tweet_input):
@@ -101,9 +103,67 @@ def main():
     
     # Building out the "Information" page
     if selection == "Information":
+        
         st.info("General Information")
         # You can read a markdown file from supporting resources folder
         st.markdown("Some information here")
+        st.subheader("Raw Twitter data and label")
+        if st.checkbox('Show raw data'):
+            st.write(raw[['sentiment', 'message']])
+            
+            def plot_sentiment(sentiment):
+                df = raw[raw['sentiment']==sentiment]
+                count = raw['sentiment'].value_counts()
+                count = pd.DataFrame({'Sentiment':count.index, 'message':count.values.flatten()})
+                return count
+            
+            st.subheader("Total Number of Tweets For Each Sentiment Group")
+            each_sentiment = st.selectbox('Visualization type', ['Bar plot', 'Pie chart'], key='2')
+            tweet_sentiment_count = raw.groupby('sentiment')['sentiment'].count().sort_values(ascending=False)
+            tweet_sentiment_count = pd.DataFrame({'sentiment':tweet_sentiment_count.index, 'message':tweet_sentiment_count.values.flatten()})
+            if not st.checkbox("Close", True, key='2'):
+                if each_sentiment == 'Bar plot':
+                    st.subheader("Total number of tweets for each Sentiment")
+                    fig_1 = px.bar(tweet_sentiment_count, x='sentiment', y='message', color='message', height=500)
+                    st.plotly_chart(fig_1)
+                if each_sentiment == 'Pie chart':
+                    st.subheader("Total number of tweets for each Sentiment")
+                    fig_2 = px.pie(tweet_sentiment_count, values='message', names='sentiment')
+                    st.plotly_chart(fig_2)
+            
+            choice = st.multiselect('Select Sentiment', ('Anti','Neutral','Pro','News'), key=0)
+            if len(choice) > 0:
+                breakdown_type = st.selectbox('Visualization type', ['Pie chart', 'Bar plot', ], key='3')
+                fig_3 = make_subplots(rows=1, cols=len(choice), subplot_titles=choice)
+                if breakdown_type == 'Bar plot':
+                    for i in range(1):
+                        for j in range(len(choice)):
+                            fig_3.add_trace(
+                        go.Bar(x=plot_sentiment(choice[j]).Sentiment, y=plot_sentiment(choice[j]).message, showlegend=False),
+                        row=i+1, col=j+1
+                    )
+                    fig_3.update_layout(height=600, width=800)
+                    st.plotly_chart(fig_3)
+                else:
+                    fig_3 = make_subplots(rows=1, cols=len(choice), specs=[[{'type':'domain'}]*len(choice)], subplot_titles=choice)
+                    for i in range(1):
+                        for j in range(len(choice)):
+                            fig_3.add_trace(
+                        go.Pie(labels=plot_sentiment(choice[j]).Sentiment, values=plot_sentiment(choice[j]).message, showlegend=True),
+                        i+1, j+1
+                    )
+                    fig_3.update_layout(height=600, width=800)
+                    st.plotly_chart(fig_3)
+            
+            
+                        
+                
+    
+        
+            
+                
+        
+        
         
     
     # Building out the predication page
