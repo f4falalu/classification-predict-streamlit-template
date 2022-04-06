@@ -134,7 +134,7 @@ def main():
              
              #Sentiment Ratio
              st.info("Sentiment Ratio")
-             message_sentiment = pd.DataFrame(["message"]).apply(processed_text)
+             #message_sentiment = pd.DataFrame(["message"]).apply(processed_text)
              #message_sentiment = message_sentiment["message"].apply(processed_text)
              
              
